@@ -5,13 +5,11 @@ using System.Threading.Tasks;
 
 namespace MoviesAPI.Entities
 {
-	//Many to many relationship between Movie and Genre
-	public class MovieGenres
+	public class MovieTheatersMovies
 	{
-		public int GenreId { get; set; }
+		public int MovieTheaterId { get; set; }
 		public int MovieId { get; set; }
-
-		public Genre Genre { get; set; }
+		public MovieTheater MovieTheater { get; set; }
 		public Movie Movie { get; set; }
 	}
 }

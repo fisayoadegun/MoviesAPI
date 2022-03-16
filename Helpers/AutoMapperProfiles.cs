@@ -27,6 +27,52 @@ namespace MoviesAPI.Helpers
 			CreateMap<MovieTheaterCreationDTO, MovieTheater>()
 				.ForMember(x => x.Location, x => x.MapFrom(dto =>
 				geometryFactory.CreatePoint(new Coordinate(dto.Longitude, dto.Latitude))));
+
+			CreateMap<MovieCreationDTO, Movie>()
+				.ForMember(x => x.Poster, options => options.Ignore())
+				.ForMember(x => x.MoviesGenres, options => options.MapFrom(MapMoviesGenres))
+				.ForMember(x => x.MoviesTheatersMovies, options => options.MapFrom(MapMovieTheatersMovies))
+				.ForMember(x => x.MoviesActors, options => options.MapFrom(MapMoviesActors));
+		}
+
+		private List<MovieGenres> MapMoviesGenres(MovieCreationDTO movieCreationDTO, Movie movie)
+		{
+			var result = new List<MovieGenres>();
+			if (movieCreationDTO.GenresIds == null) { return result; }
+
+			foreach (var id in movieCreationDTO.GenresIds)
+			{
+				result.Add(new MovieGenres() { GenreId = id });
+			}
+
+			return result;
+		}
+
+		private List<MovieTheatersMovies> MapMovieTheatersMovies(MovieCreationDTO movieCreationDTO,
+			Movie movie)
+		{
+			var result = new List<MovieTheatersMovies>();
+			if (movieCreationDTO.MovieTheatersIds == null) { return result; }
+
+			foreach (var id in movieCreationDTO.MovieTheatersIds)
+			{
+				result.Add(new MovieTheatersMovies() { MovieTheaterId = id });
+			}
+
+			return result;
+		}
+
+		private List<MovieActors> MapMoviesActors(MovieCreationDTO movieCreationDTO, Movie movie)
+		{
+			var result = new List<MovieActors>();
+			if (movieCreationDTO.Actors == null) { return result; }
+
+			foreach (var actor in movieCreationDTO.Actors)
+			{
+				result.Add(new MovieActors() { ActorId = actor.Id, Character = actor.Character });
+			}
+
+			return result;
 		}
 	}
 }
