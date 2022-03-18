@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MoviesAPI.Data;
 using MoviesAPI.DTOs;
 using MoviesAPI.Entities;
@@ -27,12 +28,70 @@ namespace MoviesAPI.Controllers
 			this.fileStorageService = fileStorageService;
 		}
 
+
+		[HttpGet("PostGet")]
+		public async Task<ActionResult<MoviePostGetDTO>> PostGet()
+		{
+			var movieTheaters = await context.MovieTheaters.OrderBy(x => x.Name).ToListAsync();
+			var genres = await context.Genres.OrderBy(x => x.Name).ToListAsync();
+
+			var movieTheaterDTO = mapper.Map<List<MovieTheaterDTO>>(movieTheaters);
+			var genresDTO = mapper.Map<List<GenreDTO>>(genres);
+
+			return new MoviePostGetDTO() { Genres = genresDTO, MovieTheaters = movieTheaterDTO };
+		}
+
+		[HttpGet]
+		public async Task<ActionResult<HomeDTO>> Get()
+		{
+			var top = 6;
+			var today = DateTime.Today;
+
+			var upcomingReleases = await context.Movies
+				.Where(x => x.ReleaseDate > today)
+				.OrderBy(x => x.ReleaseDate)
+				.Take(top)
+				.ToListAsync();
+
+			var inTheaters = await context.Movies
+				.Where(x => x.InTheaters)
+				.OrderBy(x => x.ReleaseDate)
+				.Take(top)
+				.ToListAsync();
+
+			var homeDTO = new HomeDTO();
+			homeDTO.UpcomingReleases = mapper.Map<List<MovieDTO>>(upcomingReleases);
+			homeDTO.InTheaters = mapper.Map<List<MovieDTO>>(inTheaters);
+
+			return homeDTO;
+		}
+
+		[HttpGet("{id:int}")]
+		public async Task<ActionResult<MovieDTO>> Get(int id)
+		{
+			var movie = await context.Movies
+				.Include(x => x.MoviesGenres).ThenInclude(x => x.Genre)
+				.Include(x => x.MoviesTheatersMovies).ThenInclude(x => x.MovieTheater)
+				.Include(x => x.MoviesActors).ThenInclude(x => x.Actor)
+				.FirstOrDefaultAsync(x => x.Id == id);
+
+			if (movie == null)
+			{
+				return NotFound();
+			}
+
+			var dto = mapper.Map<MovieDTO>(movie);
+			dto.Actors = dto.Actors.OrderBy(x => x.Order).ToList();
+
+			return dto;
+		}
+
 		[HttpPost]
 		public async Task<ActionResult> Post([FromForm] MovieCreationDTO movieCreationDTO)
 		{
 			var movie = mapper.Map<Movie>(movieCreationDTO);
 
-			if (movie.Poster != null)
+			if (movieCreationDTO.Poster != null)
 			{
 				movie.Poster = await fileStorageService.SaveFile(container, movieCreationDTO.Poster);
 			}
